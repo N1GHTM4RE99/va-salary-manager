@@ -1,32 +1,32 @@
 import { useState } from 'react'
-import { Download, Upload, RotateCcw, AlertTriangle } from 'lucide-react'
+import { Download, Upload, RotateCcw } from 'lucide-react'
 import { PageWrapper } from '../components/layout'
 import { GlassCard, ConfirmModal } from '../components/ui'
-import { useSettingsStore, useVAStore, useEntryStore, useCycleStore } from '../store'
-import { DEFAULT_SETTINGS } from '../lib/constants'
+import { useSettingsStore, useCycleStore } from '../store'
 
 export function Settings() {
   const settings = useSettingsStore()
   const updateSettings = useSettingsStore(state => state.updateSettings)
-  const resetSettings = useSettingsStore(state => state.resetSettings)
+  
+  const exportData = useCycleStore(state => state.exportData)
+  const importData = useCycleStore(state => state.importData)
+  const resetAllData = useCycleStore(state => state.resetAllData)
   
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   
-  const handleExportData = () => {
-    const data = {
-      vas: useVAStore.getState().vas,
-      entries: useEntryStore.getState().entries,
-      cycle: useCycleStore.getState(),
-      settings: useSettingsStore.getState()
+  const handleExportData = async () => {
+    try {
+      const data = await exportData()
+      const blob = new Blob([data], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `va-salary-backup-${new Date().toISOString().split('T')[0]}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert('Erreur lors de l\'exportation')
     }
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `va-salary-backup-${new Date().toISOString().split('T')[0]}.json`
-    a.click()
-    URL.revokeObjectURL(url)
   }
   
   const handleImportData = () => {
@@ -39,13 +39,7 @@ export function Settings() {
       
       try {
         const text = await file.text()
-        const data = JSON.parse(text)
-        
-        if (data.vas) useVAStore.setState({ vas: data.vas })
-        if (data.entries) useEntryStore.setState({ entries: data.entries })
-        if (data.cycle) useCycleStore.setState(data.cycle)
-        if (data.settings) useSettingsStore.setState(data.settings)
-        
+        await importData(text)
         alert('Données importées avec succès!')
       } catch (err) {
         alert('Erreur lors de l\'importation')
@@ -54,11 +48,10 @@ export function Settings() {
     input.click()
   }
   
-  const handleReset = () => {
-    localStorage.clear()
-    window.location.reload()
+  const handleReset = async () => {
+    await resetAllData()
   }
-  
+
   return (
     <PageWrapper title="Paramètres" subtitle="Configurez l'application">
       <div className="max-w-2xl space-y-6">
@@ -133,7 +126,11 @@ export function Settings() {
         
         {/* Data Management */}
         <GlassCard className="p-6">
-          <h3 className="font-semibold mb-4">Gestion des données</h3>
+          <h3 className="font-semibold mb-4">Gestion des données (IndexedDB)</h3>
+          <p className="text-sm text-white/50 mb-4">
+            Vos données sont stockées de manière sécurisée dans votre navigateur. 
+            Utilisez l'export pour sauvegarder et l'import pour restaurer.
+          </p>
           <div className="space-y-3">
             <button onClick={handleExportData} className="glass-button secondary w-full justify-start">
               <Download className="w-4 h-4" />

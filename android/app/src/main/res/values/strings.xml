@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VA Salary Manager</string>
+    <string name="title_activity_main">VA Salary Manager</string>
+    <string name="package_name">com.vasalary.manager</string>
+    <string name="custom_url_scheme">com.vasalary.manager</string>
+</resources>
